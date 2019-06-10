@@ -1,45 +1,65 @@
-const { app, BrowserWindow } = require('electron'); // eslint-disable-line
+/* eslint-disable @typescript-eslint/no-var-requires */
+const { app, BrowserWindow } = require("electron");
+
+const { initScheme, Router, MiniRouter, electronStatic } = require("../dist");
 
 let mainWindow;
 
-global.ElectronRouter = require('../');
+initScheme();
 
-global.router = new global.ElectronRouter.Router();
-global.router.get('foo/:thing/:other', (req, res) => {
-  res.json(Object.assign({ foo: 'bar', thing: req.params.thing }, req));
+const router = new Router();
+
+router.use(electronStatic(__dirname));
+
+router.get("foo/:thing/:other", (req, res) => {
+  res.json(Object.assign({ foo: "bar", thing: req.params.thing }, req));
 });
-global.router.post('send', (req, res) => {
+
+router.post("send", (req, res) => {
   console.log(req.uploadData[0].json());
-  res.json(Object.assign({ foo: 'bar', thing: req.params.thing }, req));
+  res.json(Object.assign({ foo: "bar", thing: req.params.thing }, req));
 });
-// global.router.get('/', (req, res) => res.json({}));
-const testUse = new global.ElectronRouter.MiniRouter();
-global.router.use(':use', testUse);
-testUse.use('thing', (req, res, next) => { console.log('thing_route_use'); setTimeout(next, 1000); });
-testUse.get('thing', (req, res, next) => { console.log('thing_route'); setTimeout(next, 1000); });
-testUse.get(':this', (req, res) => { console.log('this_route'); res.json({ use: req.params.use, this: req.params.this }); });
+
+const testUse = new MiniRouter();
+router.use(testUse);
+testUse.use("thing", (req, res, next) => {
+  console.log("thing_route_use");
+  setTimeout(next, 1000);
+});
+testUse.get("thing", (req, res, next) => {
+  console.log("thing_route");
+  setTimeout(next, 1000);
+});
+testUse.get("/:this", (req, res) => {
+  console.log("this_route");
+  res.json({ this: req.params.this });
+});
 
 function createWindow() {
-  mainWindow = new BrowserWindow({ width: 800, height: 600 });
+  mainWindow = new BrowserWindow({
+    width: 800,
+    height: 600,
+    webPreferences: {}
+  });
 
-  mainWindow.loadURL(`file://${__dirname}/index.html`);
+  mainWindow.loadURL(`app://./`);
 
   mainWindow.webContents.openDevTools();
 
-  mainWindow.on('closed', function () {
+  mainWindow.on("closed", () => {
     mainWindow = null;
   });
 }
 
-app.on('ready', createWindow);
+app.on("ready", createWindow);
 
-app.on('window-all-closed', function () {
-  if (process.platform !== 'darwin') {
+app.on("window-all-closed", () => {
+  if (process.platform !== "darwin") {
     app.quit();
   }
 });
 
-app.on('activate', function () {
+app.on("activate", () => {
   if (mainWindow === null) {
     createWindow();
   }
